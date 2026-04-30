@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AR Robot Call Demo</title>
+
+    <!-- 3D -->
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+
+    <!-- AR -->
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+
+      /* スタートボタン */
+      #startButton {
+        position: fixed;
+        z-index: 999;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 14px 24px;
+        font-size: 18px;
+        border: none;
+        border-radius: 30px;
+        background-color: #ff8fab;
+        color: white;
+        font-weight: bold;
+      }
+
+      /* カメラ切り替え */
+      #cameraButton {
+        position: fixed;
+        z-index: 999;
+        top: 20px;
+        right: 20px;
+        padding: 10px 16px;
+        border: none;
+        border-radius: 20px;
+        background-color: #444;
+        color: white;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+
+  <body>
+    <button id="startButton">ARをはじめる</button>
+    <button id="cameraButton">外カメラ</button>
+
+    <a-scene
+      embedded
+      arjs="sourceType: webcam; facingMode: environment; trackingMethod: best; debugUIEnabled: false;"
+    >
+      <!-- 音 -->
+      <a-assets>
+        <audio
+          id="callSound"
+          src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_115b9b6c2f.mp3"
+        ></audio>
+      </a-assets>
+
+      <!-- マーカー -->
+      <a-marker preset="hiro">
+        <a-entity
+          id="robot"
+          position="0 0 0"
+          animation__move="property: position; from: 0 0 1; to: 0 0 -0.4; dur: 2500; easing: easeOutQuad"
+        >
+          <!-- 体 -->
+          <a-box
+            position="0 0.5 0"
+            width="0.6"
+            height="0.6"
+            depth="0.6"
+            color="#ffb6c1"
+            animation__float="property: position; from: 0 0.5 0; to: 0 0.65 0; dir: alternate; dur: 700; loop: true"
+          ></a-box>
+
+          <!-- 顔 -->
+          <a-sphere
+            position="0 1 0"
+            radius="0.35"
+            color="#ffe4ec"
+          ></a-sphere>
+
+          <!-- 目 -->
+          <a-sphere position="-0.12 1.05 -0.32" radius="0.04" color="black"></a-sphere>
+          <a-sphere position="0.12 1.05 -0.32" radius="0.04" color="black"></a-sphere>
+
+          <!-- 口 -->
+          <a-torus
+            position="0 0.9 -0.32"
+            radius="0.08"
+            radius-tubular="0.01"
+            arc="180"
+            rotation="0 0 180"
+            color="black"
+          ></a-torus>
+
+          <!-- 手 -->
+          <a-sphere
+            position="-0.4 0.6 0"
+            radius="0.1"
+            color="#ff8fab"
+            animation="property: rotation; from: 0 0 -20; to: 0 0 20; dir: alternate; dur: 500; loop: true"
+          ></a-sphere>
+
+          <a-sphere
+            position="0.4 0.6 0"
+            radius="0.1"
+            color="#ff8fab"
+            animation="property: rotation; from: 0 0 20; to: 0 0 -20; dir: alternate; dur: 500; loop: true"
+          ></a-sphere>
+
+          <!-- テキスト -->
+          <a-text
+            value="こっちだよ →"
+            position="-1 1.6 0"
+            rotation="-90 0 0"
+            color="black"
+            width="4"
+            animation="property: scale; from: 1 1 1; to: 1.2 1.2 1; dir: alternate; dur: 600; loop: true"
+          ></a-text>
+
+          <!-- 矢印 -->
+          <a-cone
+            position="0.8 1.2 0"
+            radius-bottom="0.2"
+            radius-top="0"
+            height="0.5"
+            color="#ff5c8a"
+            rotation="0 0 -90"
+            animation="property: position; from: 0.6 1.2 0; to: 1 1.2 0; dir: alternate; dur: 500; loop: true"
+          ></a-cone>
+
+          <!-- 音 -->
+          <a-sound
+            id="robotSound"
+            src="#callSound"
+            autoplay="false"
+            loop="false"
+            volume="0.7"
+          ></a-sound>
+        </a-entity>
+      </a-marker>
+
+      <a-entity camera></a-entity>
+    </a-scene>
+
+    <script>
+      const startButton = document.getElementById("startButton");
+      const cameraButton = document.getElementById("cameraButton");
+
+      let currentCamera = "environment";
+
+      // 音スタート
+      startButton.addEventListener("click", () => {
+        startButton.style.display = "none";
+        const sound = document.querySelector("#robotSound");
+
+        setTimeout(() => {
+          if (sound && sound.components.sound) {
+            sound.components.sound.playSound();
+          }
+        }, 1000);
+      });
+
+      // カメラ切り替え
+      cameraButton.addEventListener("click", () => {
+        currentCamera =
+          currentCamera === "environment" ? "user" : "environment";
+
+        const newUrl =
+          window.location.pathname +
+          "?camera=" +
+          currentCamera +
+          "&t=" +
+          Date.now();
+
+        window.location.href = newUrl;
+      });
+
+      // 読み込み時にカメラ反映
+      window.addEventListener("load", () => {
+        const params = new URLSearchParams(window.location.search);
+        const camera = params.get("camera") || "environment";
+
+        currentCamera = camera;
+
+        const scene = document.querySelector("a-scene");
+
+        scene.setAttribute(
+          "arjs",
+          "sourceType: webcam; facingMode: " +
+            camera +
+            "; trackingMethod: best; debugUIEnabled: false;"
+        );
+
+        cameraButton.textContent =
+          camera === "environment" ? "外カメラ" : "インカメラ";
+      });
+    </script>
+  </body>
+</html>
